@@ -1,3 +1,5 @@
+//Low level alarm at 60 gallons
+
 // include the library code:
 #include <LiquidCrystal.h>
 
@@ -10,13 +12,14 @@
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-bool ack = true;
+bool ack = false;
 int oldButtonState = 0;
 int buttonState = 0;
+int lowLevel = 60; // Low level limit in gallons
 
 void setup() { 
   buttonState = 0;
-  
+  Serial.begin(9600);  
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   // Print a message to the LCD.
@@ -49,19 +52,18 @@ void loop() {
     distance= distance*0.3937; //Convert from cm to inches
 
     double gallons = distance*6.4; //Converts to gallons for CL-1 tank
-  	
-  	checkLevel(gallons); 
+  	int intGallons = (int)gallons;
+  	checkLevel(intGallons); 
   	checkAck(oldButtonState, buttonState);
-  
-    lcd.print(gallons,2);
-    lcd.println(" Gallons");
+ 	//Serial.println(intGallons);
      	
   delay(50);
 }
  
-void checkLevel (double gallons){
-  if (gallons<70){
+void checkLevel (int intGallons){
+  if (intGallons<lowLevel){
     if(ack != true){  //checks if acknowledged
+    lcd.print("Low Level       ");     
     digitalWrite(BUZZER, HIGH);
   	digitalWrite(LED, HIGH);
 	delay(500);
@@ -69,12 +71,15 @@ void checkLevel (double gallons){
     delay(500);}
     
     else{
+      lcd.print("Low Level - ACK ");
       digitalWrite(LED,HIGH);
       digitalWrite(BUZZER,LOW);
     }
   }
 
-  if (gallons>=70){
+  if (intGallons>=lowLevel){
+    lcd.print(intGallons);
+    lcd.print(" Gallons        ");
     digitalWrite(BUZZER, LOW);
   	digitalWrite(LED,LOW);
     buttonState = 0;
