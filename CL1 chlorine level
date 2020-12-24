@@ -1,30 +1,38 @@
-//Low level alarm at 60 gallons
+//Low level alarm at 2 gallons
 
 // include the library code:
-#include <LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
 
-#define ECHO 6 //Module pins
-#define TRIG 7 
-#define BUZZER 8 //Buzzer pin
-#define LED 9 //LED pin
-#define BUTTON 10 // button pin
+const int ECHO = 6; //Module pins
+const int TRIG = 7; 
+const int BUZZER = 8; //Buzzer pin
+const int LED = 9; //LED pin
+const int BUTTON = 10; // button pin
 
 // initialize the library with the numbers of the interface pins
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal_I2C lcd(0x27,20,4);
 
 bool ack = false;
 int oldButtonState = 0;
 int buttonState = 0;
-int lowLevel = 60; // Low level limit in gallons
+int lowLevel = 2; // Low level limit in gallons
+int fullTankHeight = 54; //Tank height to sensor in inches
+int fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
+double emptySpace;
+int gallons;
 
 void setup() { 
-  buttonState = 0;
+int fullTankHeight = 54; //Tank height to sensor in inches
+int fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons  
+buttonState = 0;
+
   Serial.begin(9600);  
   // set up the LCD's number of columns and rows:
-  lcd.begin(16, 2);
+  lcd.init();
+  lcd.backlight();
   // Print a message to the LCD.
   lcd.print("CL-1 Capacity");
-  
+
   pinMode(TRIG, OUTPUT); // Initializing Trigger Output and Echo Input 
   pinMode(ECHO, INPUT_PULLUP);  
   pinMode(BUZZER,OUTPUT);
@@ -34,62 +42,68 @@ void setup() {
 }
 
 void loop() {
-  // set the cursor to column 0, line 1
-  // (note: line 1 is the second row, since counting begins with 0):
+
   lcd.setCursor(0, 1);
+  
+  digitalWrite(TRIG, LOW); // Set the trigger pin to low for 2uS 
+  delayMicroseconds(2);    
+  digitalWrite(TRIG, HIGH); // Send a 10uS high to trigger ranging 
+  delayMicroseconds(20);    
+  digitalWrite(TRIG, LOW); // Send pin low again 
+  float distance = pulseIn(ECHO, HIGH,26000); // Read in times pulse 
+    
+  distance= distance/58; //Convert the pulse duration to distance                         
+  distance= (distance*0.3937)+.75; //Convert from cm to inches //.75 accountings for sensor error at greater distances, lower distance can take this .75 out
 
-    digitalWrite(TRIG, LOW); // Set the trigger pin to low for 2uS 
-    delayMicroseconds(2); 
+  double emptySpace = distance*6.4; //Converts to gallons for CL-1 tank
+  int intEmptySpace = (int)emptySpace; //Converts double to int
+  int gallons = fullTankVolume - intEmptySpace;   
+  checkLevel(gallons); 
     
-    digitalWrite(TRIG, HIGH); // Send a 10uS high to trigger ranging 
-    delayMicroseconds(20); 
-    
-    digitalWrite(TRIG, LOW); // Send pin low again 
-    float distance = pulseIn(ECHO, HIGH,26000); // Read in times pulse 
-    
-    distance= distance/58; //Convert the pulse duration to distance
-                           //You can add other math functions to calibrate it well
-    distance= distance*0.3937; //Convert from cm to inches
-
-    double gallons = distance*6.4; //Converts to gallons for CL-1 tank
-  	int intGallons = (int)gallons;
-  	checkLevel(intGallons); 
-  	checkAck(oldButtonState, buttonState);
- 	//Serial.println(intGallons);
-     	
+  checkAck(oldButtonState, buttonState);
+  Serial.println(distance);
+  Serial.println(gallons);
+  Serial.println(intEmptySpace);
+  Serial.println(fullTankVolume);
   delay(50);
 }
  
-void checkLevel (int intGallons){
-  if (intGallons<lowLevel){
+void checkLevel (int gallons){
+  if (gallons<lowLevel){
     if(ack != true){  //checks if acknowledged
-    lcd.print("Low Level       ");     
-    digitalWrite(BUZZER, HIGH);
-  	digitalWrite(LED, HIGH);
-	delay(500);
-    digitalWrite(LED, LOW);
-    delay(500);}
+      lcd.print("Low Level       ");     
+      digitalWrite(BUZZER, HIGH);
+      digitalWrite(LED, HIGH);
+      delay(500);
+      digitalWrite(LED, LOW);
+      delay(500);
+      }
     
     else{
-      lcd.print("Low Level - ACK ");
+      lcd.print("Low Level - ACK     ");
       digitalWrite(LED,HIGH);
       digitalWrite(BUZZER,LOW);
-    }
+      }
   }
 
-  if (intGallons>=lowLevel){
-    lcd.print(intGallons);
-    lcd.print(" Gallons        ");
-    digitalWrite(BUZZER, LOW);
-  	digitalWrite(LED,LOW);
-    buttonState = 0;
-    ack = false;
-  	delay(1000);}
-  }
+  if (gallons>=lowLevel){
+    if(gallons<295){
+      lcd.print(gallons);
+      lcd.print(" Gallons        ");
+      digitalWrite(BUZZER, LOW);
+      digitalWrite(LED,LOW);
+      buttonState = 0;
+      ack = false;
+      delay(1000);}
+    else{
+      lcd.print("Out of Range");}
+      }
+}
    
 bool checkAck(int oldButtonState, int buttonState){
   oldButtonState = digitalRead(BUTTON);
   if(buttonState != oldButtonState){
     buttonState = 1;
     ack = true;}
-  return ack;}
+    return ack;
+}
