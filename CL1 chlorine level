@@ -1,37 +1,38 @@
-//Low level alarm at 2 gallons
+//Low level alarm at 75 gallons
+//Tank height to sensor is 54 inches
+//Sensor out of range >285 gallons
 
 // include the library code:
 #include <LiquidCrystal_I2C.h>
 
-const int ECHO = 6; //Module pins
-const int TRIG = 7; 
+const int TRIG = 6; //Module pins
+const int ECHO = 7; 
 const int BUZZER = 8; //Buzzer pin
 const int LED = 9; //LED pin
 const int BUTTON = 10; // button pin
+unsigned long previousMillis = 0;  
+const long interval = 500; 
+int ledState = LOW;
+int buzzerState = LOW;
+static unsigned long buzzerCameOn = 0;
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal_I2C lcd(0x27,20,4);
-
+                    //SDA pin A4
+                    //SCD pin A5
 bool ack = false;
 int oldButtonState = 0;
 int buttonState = 0;
-int lowLevel = 2; // Low level limit in gallons
+int lowLevel = 75; // Low level limit in gallons
 int fullTankHeight = 54; //Tank height to sensor in inches
 int fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
 double emptySpace;
 int gallons;
 
 void setup() { 
-int fullTankHeight = 54; //Tank height to sensor in inches
-int fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons  
-buttonState = 0;
-
-  Serial.begin(9600);  
-  // set up the LCD's number of columns and rows:
-  lcd.init();
-  lcd.backlight();
-  // Print a message to the LCD.
-  lcd.print("CL-1 Capacity");
+  int fullTankHeight = 54; //Tank height to sensor in inches
+  int fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons  
+  buttonState = 0;
 
   pinMode(TRIG, OUTPUT); // Initializing Trigger Output and Echo Input 
   pinMode(ECHO, INPUT_PULLUP);  
@@ -39,11 +40,18 @@ buttonState = 0;
   pinMode(LED, OUTPUT);
   pinMode(BUTTON, INPUT);  
 
-}
+  Serial.begin(9600);  
+  // set up the LCD's number of columns and rows:
+  lcd.init();
+  lcd.backlight();
+  // Print a message to the LCD.
+  lcd.print("CL-1 Capacity");
+} //end setup
 
 void loop() {
-
-  lcd.setCursor(0, 1);
+  
+  unsigned long currentMillis = millis();
+  lcd.setCursor(0,1);
   
   digitalWrite(TRIG, LOW); // Set the trigger pin to low for 2uS 
   delayMicroseconds(2);    
@@ -52,58 +60,127 @@ void loop() {
   digitalWrite(TRIG, LOW); // Send pin low again 
   float distance = pulseIn(ECHO, HIGH,26000); // Read in times pulse 
     
-  distance= distance/58; //Convert the pulse duration to distance                         
-  distance= (distance*0.3937)+.75; //Convert from cm to inches //.75 accountings for sensor error at greater distances, lower distance can take this .75 out
-
+  distance = distance/58; //Convert the pulse duration to distance                         
+  distance = (distance*0.3937); //Convert from cm to inches 
+  distance = distanceOffset(distance); //Accounts for sensor being crap
   double emptySpace = distance*6.4; //Converts to gallons for CL-1 tank
-  int intEmptySpace = (int)emptySpace; //Converts double to int
-  int gallons = fullTankVolume - intEmptySpace;   
-  checkLevel(gallons); 
+  int intEmptySpace = round(emptySpace); //Rounds decimal to nearest integer
+  int gallons = fullTankVolume - intEmptySpace; //Calculates gallons of CL-1 in tank based off tank volume and empty space
+  checkLevel(gallons, currentMillis); 
     
   checkAck(oldButtonState, buttonState);
   Serial.println(distance);
-  Serial.println(gallons);
-  Serial.println(intEmptySpace);
-  Serial.println(fullTankVolume);
-  delay(50);
-}
- 
-void checkLevel (int gallons){
+  //Serial.println(gallons);
+  //Serial.println(intEmptySpace);
+  //Serial.println(fullTankVolume);
+} //end loop
+
+void checkLevel (int gallons, unsigned long currentMillis){
   if (gallons<lowLevel){
     if(ack != true){  //checks if acknowledged
-      lcd.print("Low Level       ");     
-      digitalWrite(BUZZER, HIGH);
-      digitalWrite(LED, HIGH);
-      delay(500);
-      digitalWrite(LED, LOW);
-      delay(500);
-      }
-    
-    else{
-      lcd.print("Low Level - ACK     ");
-      digitalWrite(LED,HIGH);
-      digitalWrite(BUZZER,LOW);
-      }
-  }
-
-  if (gallons>=lowLevel){
-    if(gallons<295){
       lcd.print(gallons);
       lcd.print(" Gallons        ");
+      lcd.setCursor(0,2);
+      lcd.print("Low Level Alarm     ");
+      lcd.setCursor(0,3);
+      lcd.print("                  "); 
+      digitalWrite(BUZZER, HIGH);
+      if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;   
+        if (ledState == LOW) {
+        ledState = HIGH;
+      } 
+        else {
+        ledState = LOW;
+      }  
+      digitalWrite(LED, ledState); 
+    }
+  }   
+    else{   
+      lcd.print(gallons);
+      lcd.print(" Gallons        ");
+      lcd.setCursor(0,2);
+      lcd.print("Low Level Alarm     ");
+      lcd.setCursor(0,3);
+      lcd.print("**Acknowledged**    ");
+      digitalWrite(LED,HIGH);
+      digitalWrite(BUZZER,LOW);
+    }
+  }
+  if (gallons>=lowLevel){
+    if(gallons<=285){
+      lcd.print(gallons);
+      lcd.print(" Gallons        ");
+      lcd.setCursor(0,2);
+      lcd.print("                    ");
+      lcd.setCursor(0,3);
+      lcd.print("                    ");              
       digitalWrite(BUZZER, LOW);
       digitalWrite(LED,LOW);
       buttonState = 0;
-      ack = false;
-      delay(1000);}
-    else{
-      lcd.print("Out of Range");}
-      }
+      ack = false;}
+    else{    
+      lcd.print("Tank Full           ");
+      lcd.setCursor(0,2);
+      lcd.print("Sensor Out of Range ");
+      lcd.setCursor(0,3);
+      lcd.print("                    ");
+      digitalWrite(LED,HIGH);
+    }
+  }                
 }
-   
+// Checks if alarm has been acknowledged   
 bool checkAck(int oldButtonState, int buttonState){
   oldButtonState = digitalRead(BUTTON);
   if(buttonState != oldButtonState){
     buttonState = 1;
-    ack = true;}
-    return ack;
+    ack = true;
+    }
+  return ack;
+}
+//Accounts for sensor errors based on distance
+float distanceOffset(float distance){
+  if(distance>=9.5 && distance<10){
+    distance = distance + .5;
+  }
+  else if(distance>=10 && distance<14){
+    distance = distance + .5;
+  }
+  else if(distance>=14 && distance<15){
+    distance = distance + .70;
+  }
+  else if(distance>=15 && distance<17){
+    distance = distance + .25;
+  }
+  else if(distance>=17 && distance<17.5){
+    distance = distance + 0;
+  }
+  else if(distance>=17.5 && distance<20){
+    distance = distance + .25;
+  }
+  else if(distance>=20 && distance<20.5){
+    distance = distance + .25;
+  }
+  else if(distance>=20.5 && distance<25){
+    distance = distance + .2;
+  }
+  else if(distance>=25 && distance<30){
+    distance = distance + 0;
+  }
+  else if(distance>=30 && distance<32){
+    distance = distance + 0;
+  }
+  else if(distance>=32 && distance<40){
+    distance = distance + .1;
+  }
+  else if(distance>=40 && distance<42){
+    distance = distance + .2;
+  }
+  else if(distance>=42 && distance<50){
+    distance = distance + .15;
+  }
+  else{
+    distance = distance + .15;
+  }
+  return distance;
 }
