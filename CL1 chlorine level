@@ -10,11 +10,10 @@ const int ECHO = 7;
 const int BUZZER = 8; //Buzzer pin
 const int LED = 9; //LED pin
 const int BUTTON = 10; // button pin
+
 unsigned long previousMillis = 0;  
-const long interval = 500; 
+const long interval = 500;
 int ledState = LOW;
-int buzzerState = LOW;
-static unsigned long buzzerCameOn = 0;
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal_I2C lcd(0x27,20,4);
@@ -66,17 +65,22 @@ void loop() {
   double emptySpace = distance*6.4; //Converts to gallons for CL-1 tank
   int intEmptySpace = round(emptySpace); //Rounds decimal to nearest integer
   int gallons = fullTankVolume - intEmptySpace; //Calculates gallons of CL-1 in tank based off tank volume and empty space
-  checkLevel(gallons, currentMillis); 
-    
+  
+  checkLevel(gallons, currentMillis);   
   checkAck(oldButtonState, buttonState);
-  Serial.println(distance);
+  
+  //Serial.println(distance);
   //Serial.println(gallons);
   //Serial.println(intEmptySpace);
   //Serial.println(fullTankVolume);
 } //end loop
 
+//Checks level of tank for alarm
 void checkLevel (int gallons, unsigned long currentMillis){
   if (gallons<lowLevel){
+    if(gallons<=0){
+      gallons = 0;
+    }
     if(ack != true){  //checks if acknowledged
       lcd.print(gallons);
       lcd.print(" Gallons        ");
@@ -103,8 +107,8 @@ void checkLevel (int gallons, unsigned long currentMillis){
       lcd.print("Low Level Alarm     ");
       lcd.setCursor(0,3);
       lcd.print("**Acknowledged**    ");
-      digitalWrite(LED,HIGH);
-      digitalWrite(BUZZER,LOW);
+      digitalWrite(LED, HIGH);
+      digitalWrite(BUZZER, LOW);
     }
   }
   if (gallons>=lowLevel){
@@ -116,7 +120,7 @@ void checkLevel (int gallons, unsigned long currentMillis){
       lcd.setCursor(0,3);
       lcd.print("                    ");              
       digitalWrite(BUZZER, LOW);
-      digitalWrite(LED,LOW);
+      digitalWrite(LED, LOW);
       buttonState = 0;
       ack = false;}
     else{    
@@ -125,10 +129,11 @@ void checkLevel (int gallons, unsigned long currentMillis){
       lcd.print("Sensor Out of Range ");
       lcd.setCursor(0,3);
       lcd.print("                    ");
-      digitalWrite(LED,HIGH);
+      digitalWrite(LED, HIGH);      
     }
   }                
 }
+
 // Checks if alarm has been acknowledged   
 bool checkAck(int oldButtonState, int buttonState){
   oldButtonState = digitalRead(BUTTON);
@@ -138,6 +143,7 @@ bool checkAck(int oldButtonState, int buttonState){
     }
   return ack;
 }
+
 //Accounts for sensor errors based on distance
 float distanceOffset(float distance){
   if(distance>=9.5 && distance<10){
