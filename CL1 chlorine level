@@ -1,6 +1,6 @@
 //Low level alarm at 75 gallons
-//Tank height to sensor is 52.75 inches
-//Sensor out of range @ 42.75 inches
+//Tank height to sensor is 52.1 inches
+//Sensor out of range @ 42.6 inches
 
 // include the library code:
 #include <LiquidCrystal_I2C.h>
@@ -66,24 +66,24 @@ void loop() {
   double emptySpace = distance*6.4; //Converts to gallons for CL-1 tank
   double gallons = fullTankVolume - emptySpace; //Calculates gallons of CL-1 in tank based off tank volume and empty space
   
-  checkLevel(gallons, currentMillis, distance);   
+  checkLevel(gallons, currentMillis);   
   checkAck(oldButtonState, buttonState);
 
   //Turn on/off serial prints
-  Serial.println(distance);
+  //Serial.println(distance);
   //Serial.println(gallons);
   //Serial.println(intEmptySpace);
   //Serial.println(fullTankVolume);
 } //end loop
 
 //Checks level of tank for alarm
-void checkLevel (double gallons, unsigned long currentMillis, float distance){
+void checkLevel (double gallons, unsigned long currentMillis){
   if (gallons<lowLevel){
     if(gallons<=0){
       gallons = 0;
     }
     if(ack != true){  //checks if acknowledged
-      lcd.print(gallons, 1);
+      lcd.print(gallons, 0);
       lcd.print(" Gallons        ");
       lcd.setCursor(0,2);
       lcd.print("Low Level Alarm     ");
@@ -102,7 +102,7 @@ void checkLevel (double gallons, unsigned long currentMillis, float distance){
     }
   }   
     else{   
-      lcd.print(gallons, 1);
+      lcd.print(gallons, 0);
       lcd.print(" Gallons        ");
       lcd.setCursor(0,2);
       lcd.print("Low Level Alarm     ");
@@ -113,8 +113,8 @@ void checkLevel (double gallons, unsigned long currentMillis, float distance){
     }
   }
   if (gallons>=lowLevel){
-    if(distance<=(fullTankHeight - 9.5)){
-      lcd.print(gallons, 1);
+    if(gallons<=275){
+      lcd.print(gallons, 0);
       lcd.print(" Gallons        ");
       lcd.setCursor(0,2);
       lcd.print("                    ");
