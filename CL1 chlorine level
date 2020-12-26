@@ -1,47 +1,36 @@
-//Need to add alarm delay for outliers for low and high level alarms
+//Low level alarm at 75 gallons
+//Tank height to sensor is 54 inches
+//Sensor out of range >285 gallons
 
-//Low level alarm at ~75 gallons
-//Tank height to sensor is 52.4 inches
-//Sensor out of range >275 gallons
-
-// Include the library code:
+// include the library code:
 #include <LiquidCrystal_I2C.h>
 
-//Initialize the library with the numbers of the interface pins
-LiquidCrystal_I2C lcd(0x27,20,4);
-                    //SDA pin A4
-                    //SCD pin A5
-                    
-//Pin variables
 const int TRIG = 6; //Module pins
 const int ECHO = 7; 
 const int BUZZER = 8; //Buzzer pin
 const int LED = 9; //LED pin
 const int BUTTON = 10; // button pin
 
-//Blink without delay variables
 unsigned long previousMillis = 0;  
 const long interval = 500;
 int ledState = LOW;
 
-//Variables for acknowledgement
+// initialize the library with the numbers of the interface pins
+LiquidCrystal_I2C lcd(0x27,20,4);
+                    //SDA pin A4
+                    //SCD pin A5
 bool ack = false;
 int oldButtonState = 0;
 int buttonState = 0;
-
-//Variables for specific tank
-int lowLevel = 75; //Low level limit, in gallons
-int tankFull = 275; //Sensor out of range above this, in gallons (height of sensor - 9.5 (distance to sensor where it stops reading correctly))*6.4
-double fullTankHeight = 52.4; //Tank height to sensor, in inches
-int fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
+int lowLevel = 75; // Low level limit in gallons
+double fullTankHeight = 52.25; //Tank height to sensor in inches
+double fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
 double emptySpace;
-int gallons;
+double gallons;
 
 void setup() { 
-  Serial.begin(9600);  
-  lcd.init();
-  lcd.backlight();
-  lcd.print("CL-1 Capacity");
+
+  buttonState = 0;
 
   pinMode(TRIG, OUTPUT); // Initializing Trigger Output and Echo Input 
   pinMode(ECHO, INPUT_PULLUP);  
@@ -49,30 +38,36 @@ void setup() {
   pinMode(LED, OUTPUT);
   pinMode(BUTTON, INPUT);  
 
+  Serial.begin(9600);  
+  // set up the LCD's number of columns and rows:
+  lcd.init();
+  lcd.backlight();
+  // Print a message to the LCD.
+  lcd.print("CL-1 Capacity");
 } //end setup
 
 void loop() {
-  lcd.setCursor(0,1); 
+  
   unsigned long currentMillis = millis();
-
+  lcd.setCursor(0,1);
+  
   digitalWrite(TRIG, LOW); // Set the trigger pin to low for 2uS 
   delayMicroseconds(2);    
   digitalWrite(TRIG, HIGH); // Send a 10uS high to trigger ranging 
   delayMicroseconds(20);    
   digitalWrite(TRIG, LOW); // Send pin low again 
-  float distance = pulseIn(ECHO, HIGH, 26000); // Read in times pulse 
+  float distance = pulseIn(ECHO, HIGH,26000); // Read in times pulse 
     
   distance = distance/58; //Convert the pulse duration to distance                         
   distance = (distance*0.3937); //Convert from cm to inches 
-  distance = distanceOffset(distance); //Accounts for sensor being cheap
+  distance = distanceOffset(distance); //Accounts for sensor being crap
   double emptySpace = distance*6.4; //Converts to gallons for CL-1 tank
-  int intEmptySpace = round(emptySpace); //Rounds decimal to nearest integer
-  int gallons = fullTankVolume - intEmptySpace; //Calculates gallons of CL-1 in tank based off tank volume and empty space
+  //int intEmptySpace = round(emptySpace); //Rounds decimal to nearest integer
+  double gallons = fullTankVolume - emptySpace; //Calculates gallons of CL-1 in tank based off tank volume and empty space
   
   checkLevel(gallons, currentMillis);   
   checkAck(oldButtonState, buttonState);
-
-  //Turn on/off serial prints
+  
   //Serial.println(distance);
   //Serial.println(gallons);
   //Serial.println(intEmptySpace);
@@ -80,7 +75,7 @@ void loop() {
 } //end loop
 
 //Checks level of tank for alarm
-void checkLevel (int gallons, unsigned long currentMillis){
+void checkLevel (double gallons, unsigned long currentMillis){
   if (gallons<lowLevel){
     if(gallons<=0){
       gallons = 0;
@@ -116,7 +111,7 @@ void checkLevel (int gallons, unsigned long currentMillis){
     }
   }
   if (gallons>=lowLevel){
-    if(gallons<=tankFull){
+    if(gallons<=285){
       lcd.print(gallons);
       lcd.print(" Gallons        ");
       lcd.setCursor(0,2);
@@ -127,8 +122,7 @@ void checkLevel (int gallons, unsigned long currentMillis){
       digitalWrite(LED, LOW);
       buttonState = 0;
       ack = false;}
-    else{
-      gallons = 999;    
+    else{    
       lcd.print("Tank Full           ");
       lcd.setCursor(0,2);
       lcd.print("Sensor Out of Range ");
@@ -149,7 +143,7 @@ bool checkAck(int oldButtonState, int buttonState){
   return ack;
 }
 
-//Accounts for sensor errors based on distance from sensor
+//Accounts for sensor errors based on distance
 float distanceOffset(float distance){
   if(distance>=9.5 && distance<10){
     distance = distance + .5;
