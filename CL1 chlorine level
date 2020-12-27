@@ -1,6 +1,6 @@
 //Low level alarm at 75 gallons
-//Tank height to sensor is 52.1 inches
-//Sensor out of range @ 42.6 inches
+//Tank height to sensor is 52.45 inches
+//Sensor out of range @ 43 inches
 
 // include the library code:
 #include <LiquidCrystal_I2C.h>
@@ -30,7 +30,7 @@ int buttonState = 0;
 
 //Variables for specific tank
 int lowLevel = 75; //Low level limit, in gallons
-double fullTankHeight = 52.1; //Tank height to sensor in inches
+double fullTankHeight = 52.45; //Tank height to sensor in inches
 double fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
 double emptySpace;
 double gallons;
@@ -71,7 +71,7 @@ void loop() {
 
   //Turn on/off serial prints
   //Serial.println(distance);
-  //Serial.println(gallons);
+  Serial.println(gallons);
   //Serial.println(intEmptySpace);
   //Serial.println(fullTankVolume);
 } //end loop
@@ -124,7 +124,7 @@ void checkLevel (double gallons, unsigned long currentMillis){
       digitalWrite(LED, LOW);
       buttonState = 0;
       ack = false;}
-    else{    
+    else{   
       lcd.print("Tank Full           ");
       lcd.setCursor(0,2);
       lcd.print("Sensor Out of Range ");
