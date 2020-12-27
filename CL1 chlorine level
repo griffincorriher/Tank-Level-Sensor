@@ -1,6 +1,6 @@
 //Low level alarm at 75 gallons
 //Tank height to sensor is 52.45 inches
-//Sensor out of range @ 43 inches
+//Sensor out of range @ 42.95 inches
 
 // include the library code:
 #include <LiquidCrystal_I2C.h>
