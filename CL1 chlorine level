@@ -1,6 +1,6 @@
 //Low level alarm at 75 gallons
-//Tank height to sensor is 52.45 inches
-//Sensor out of range @ 42.95 inches
+//Tank height to sensor is 50.30 inches
+//Sensor out of range @ 40.80 inches
 
 // include the library code:
 #include <LiquidCrystal_I2C.h>
@@ -8,11 +8,11 @@
 //Initialize the library with the numbers of the interface pins
 LiquidCrystal_I2C lcd(0x27,20,4);
                     //SDA pin A4
-                    //SCD pin A5
+                    //SCL pin A5
                     
 const int TRIG = 6; //Module pins
 const int ECHO = 7; 
-const int BUZZER = 8; //Buzzer pin
+//const int BUZZER = 8; //Buzzer pin. caused interferance with sensor
 const int LED = 9; //LED pin
 const int BUTTON = 10; // button pin
 
@@ -30,7 +30,7 @@ int buttonState = 0;
 
 //Variables for specific tank
 int lowLevel = 75; //Low level limit, in gallons
-double fullTankHeight = 52.45; //Tank height to sensor in inches
+double fullTankHeight = 50.30; //Tank height to sensor in inches
 double fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
 double emptySpace;
 double gallons;
@@ -39,14 +39,15 @@ void setup() {
   Serial.begin(9600);  
   lcd.init();
   lcd.backlight();
-  lcd.print("CL-1 Capacity");
+  lcd.print("CL-1 Capacity       ");
+  lcd.print("Build 6.9420");
 
   pinMode(TRIG, OUTPUT); // Initializing Trigger Output and Echo Input 
-  pinMode(ECHO, INPUT_PULLUP);  
-  pinMode(BUZZER,OUTPUT);
+  pinMode(ECHO, INPUT);  
+  //pinMode(BUZZER,OUTPUT);
   pinMode(LED, OUTPUT);
   pinMode(BUTTON, INPUT);  
-
+  delay(1000);
 } //end setup
 
 void loop() {
@@ -71,7 +72,7 @@ void loop() {
 
   //Turn on/off serial prints
   //Serial.println(distance);
-  Serial.println(gallons);
+  //Serial.println(gallons);
   //Serial.println(intEmptySpace);
   //Serial.println(fullTankVolume);
 } //end loop
@@ -89,16 +90,10 @@ void checkLevel (double gallons, unsigned long currentMillis){
       lcd.print("Low Level Alarm     ");
       lcd.setCursor(0,3);
       lcd.print("                  "); 
-      digitalWrite(BUZZER, HIGH);
+      //digitalWrite(BUZZER, HIGH);
       if (currentMillis - previousMillis >= interval) {
-        previousMillis = currentMillis;   
-        if (ledState == LOW) {
-        ledState = HIGH;
-      } 
-        else {
-        ledState = LOW;
-      }  
-      digitalWrite(LED, ledState); 
+        blinkLed();
+        previousMillis = currentMillis; 
     }
   }   
     else{   
@@ -109,7 +104,7 @@ void checkLevel (double gallons, unsigned long currentMillis){
       lcd.setCursor(0,3);
       lcd.print("**Acknowledged**    ");
       digitalWrite(LED, HIGH);
-      digitalWrite(BUZZER, LOW);
+      //digitalWrite(BUZZER, LOW);
     }
   }
   if (gallons>=lowLevel){
@@ -120,7 +115,7 @@ void checkLevel (double gallons, unsigned long currentMillis){
       lcd.print("                    ");
       lcd.setCursor(0,3);
       lcd.print("                    ");              
-      digitalWrite(BUZZER, LOW);
+      //digitalWrite(BUZZER, LOW);
       digitalWrite(LED, LOW);
       buttonState = 0;
       ack = false;}
@@ -130,9 +125,16 @@ void checkLevel (double gallons, unsigned long currentMillis){
       lcd.print("Sensor Out of Range ");
       lcd.setCursor(0,3);
       lcd.print("                    ");
-      digitalWrite(LED, HIGH);      
+      digitalWrite(LED, HIGH);  
+   
     }
-  }                
+  }   
+//        Serial.print("ButtonState");
+//        Serial.println(buttonState);
+//        Serial.println("Old Button State");
+//        Serial.println(oldButtonState);
+//        Serial.print("Ack");
+//        Serial.println(ack);    
 }
 
 // Checks if alarm has been acknowledged   
@@ -143,6 +145,16 @@ bool checkAck(int oldButtonState, int buttonState){
     ack = true;
     }
   return ack;
+}
+
+void blinkLed(){  
+  if (ledState == LOW) {
+    ledState = HIGH;
+  } 
+  else {
+    ledState = LOW;
+  }  
+  digitalWrite(LED, ledState);  
 }
 
 //Accounts for sensor errors based on distance
