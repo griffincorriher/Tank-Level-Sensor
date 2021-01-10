@@ -1,6 +1,6 @@
 //Low level alarm at 75 gallons
-//Tank height to sensor is 50.30 inches
-//Sensor out of range @ 40.80 inches
+//Tank height to sensor is 53 inches
+//Sensor out of range @ 43.50 inches
 
 // include the library code:
 #include <LiquidCrystal_I2C.h>
@@ -17,7 +17,8 @@ const int LED = 9; //LED pin
 const int BUTTON = 10; // button pin
 
 //Blink without delay variables
-unsigned long previousMillis = 0;  
+unsigned long previousMillis = 0;
+unsigned long dispGalMillis = 0;  
 const long interval = 500;
 const long oneSecondInterval = 1000;
 const long longInterval = 10000;
@@ -30,10 +31,13 @@ int buttonState = 0;
 
 //Variables for specific tank
 int lowLevel = 75; //Low level limit, in gallons
-double fullTankHeight = 50.30; //Tank height to sensor in inches
+double fullTankHeight = 53; //Tank height to sensor in inches
+double outOfRangeHeight = fullTankHeight - 9.5; //Sensor out of range in inches
 double fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
+double outOfRangeVolume = outOfRangeHeight*6.4; // Sensor out of range in gallons
 double emptySpace;
 double gallons;
+double galArr[9];
 
 void setup() { 
   Serial.begin(9600);  
@@ -66,12 +70,13 @@ void loop() {
   distance = distanceOffset(distance); //Accounts for sensor being crap
   double emptySpace = distance*6.4; //Converts to gallons for CL-1 tank
   double gallons = fullTankVolume - emptySpace; //Calculates gallons of CL-1 in tank based off tank volume and empty space
-  
-  checkLevel(gallons, currentMillis);   
-  checkAck(oldButtonState, buttonState);
 
+ 
+  checkLevel(gallons, currentMillis); 
+  checkAck(oldButtonState, buttonState);
+ 
   //Turn on/off serial prints
-  //Serial.println(distance);
+  Serial.println(distance);
   //Serial.println(gallons);
   //Serial.println(intEmptySpace);
   //Serial.println(fullTankVolume);
@@ -108,7 +113,7 @@ void checkLevel (double gallons, unsigned long currentMillis){
     }
   }
   if (gallons>=lowLevel){
-    if(gallons<=275){
+    if(gallons<=outOfRangeVolume){
       lcd.print(gallons, 0);
       lcd.print(" Gallons        ");
       lcd.setCursor(0,2);
@@ -136,6 +141,23 @@ void checkLevel (double gallons, unsigned long currentMillis){
 //        Serial.print("Ack");
 //        Serial.println(ack);    
 }
+
+//double getGalMed(double gallons){
+//  for(int i=0; i<9; i++){
+//    galArr[i] = gallons;
+//  }
+//
+//   for(int i=0; i<(9-1); i++) {
+//        for(int j=0; j<(9-(i+1)); j++) {
+//                if(galArr[j] > galArr[j+1]) {
+//                    int x = galArr[j];
+//                    galArr[j] = galArr[j+1];
+//                    galArr[j+1] = x;
+//                }
+//        }
+//    }
+//  return galArr[4];
+//   }
 
 // Checks if alarm has been acknowledged   
 bool checkAck(int oldButtonState, int buttonState){
