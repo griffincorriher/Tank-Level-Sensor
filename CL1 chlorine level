@@ -55,6 +55,7 @@ void setup() {
   pinMode(LED, OUTPUT);
   pinMode(BUTTON, INPUT);  
   delay(1000);
+  lcd.clear();
 } //end setup
 
 void loop() {
@@ -77,13 +78,19 @@ void loop() {
     samples.add(gallons);
   }
   gallons = samples.getMedian();
- 
+  if (isnan(gallons)) {
+    lcd.setCursor(0,1);
+    lcd.print(" Waiting for level "); 
+    lcd.setCursor(0,2);
+    lcd.print(" to come into range ");   
+  }
+  
   checkLevel(gallons, currentMillis); 
   checkAck(oldButtonState, buttonState);
   //Serial.println(digitalRead(BUTTON));
   //Turn on/off serial prints
-  Serial.println(distance);
-  //Serial.println(gallons);
+  Serial.print("distance: ");Serial.println(distance);
+  Serial.print("gallons: ");Serial.println(gallons);
   //Serial.println(intEmptySpace);
   //Serial.println(fullTankVolume);
 } //end loop
