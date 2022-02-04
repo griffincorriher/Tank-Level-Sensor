@@ -32,12 +32,13 @@ int buttonState = 0;
 
 //Variables for specific tank
 int lowLevel = 75; //Low level limit, in gallons
-double fullTankHeight = 51.3; //Tank height to sensor in inches
+double fullTankHeight = 52.25; //Tank height to sensor in inches
 double outOfRangeHeight = fullTankHeight - 9.5; //Sensor out of range in inches
 double fullTankVolume = fullTankHeight*6.4; //Converts inches to gallons
 double outOfRangeVolume = outOfRangeHeight*6.4; // Sensor out of range in gallons
 double emptySpace;
 double gallons;
+double height = gallons/6.4;
 double galArr[9];
 
 RunningMedian samples = RunningMedian(9);
@@ -46,7 +47,7 @@ void setup() {
   Serial.begin(9600);  
   lcd.init();
   lcd.backlight();
-  lcd.print("CL-1 Capacity       ");
+  lcd.print("   CL-1 Capacity    ");
   lcd.print("Build 6.9420");
 
   pinMode(TRIG, OUTPUT); // Initializing Trigger Output and Echo Input 
@@ -56,6 +57,8 @@ void setup() {
   pinMode(BUTTON, INPUT);  
   delay(1000);
   lcd.clear();
+  lcd.print("   CL-1 Capacity    ");
+
 } //end setup
 
 void loop() {
@@ -71,7 +74,7 @@ void loop() {
     
   distance = distance/58; //Convert the pulse duration to distance                         
   distance = (distance*0.3937); //Convert from cm to inches 
-  distance = distanceOffset(distance); //Accounts for sensor being crap
+  //distance = distanceOffset(distance); //Accounts for sensor being crap
   double emptySpace = distance*6.4; //Converts to gallons for CL-1 tank
   double gallons = fullTankVolume - emptySpace; //Calculates gallons of CL-1 in tank based off tank volume and empty space
   if(gallons>=0 && gallons<(outOfRangeVolume+5)){
@@ -89,6 +92,7 @@ void loop() {
   checkAck(oldButtonState, buttonState);
   //Serial.println(digitalRead(BUTTON));
   //Turn on/off serial prints
+  //Serial.print("height: ");Serial.println(height);
   Serial.print("distance: ");Serial.println(distance);
   Serial.print("gallons: ");Serial.println(gallons);
   //Serial.println(intEmptySpace);
