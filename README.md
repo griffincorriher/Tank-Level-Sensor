@@ -24,3 +24,8 @@ LCD connection            |  Arduino Nano + Ultrasonic board
 
 ## Conclusion
 This has been used for the past two years without any issues, and has saved many man-hours by reducing how often the tank has to be opened up and manually checked, as well as reduced the potential harm to employees.
+
+## Skills used
+- C/C++/Arduino language
+- Hardware/firmware integration
+- 3d printing
