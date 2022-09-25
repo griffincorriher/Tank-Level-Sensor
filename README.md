@@ -1,5 +1,5 @@
 # Toxic chemical level sensor
-## Issue
+## Problem
 At the data center I work in, we use a highly concentrated form of chlorine called AWSB-7000 that is constantly pumped into the water system to treat bacteria growth. It needs to be refilled by a contracted chemical company prior to being fully depleted. A wooden stick with 1" markings was used to measure the height of the liquid in inches, then a multiplier was used to convert to gallons. This required an operator to open the tank lid, exposing their eyes and lungs to the highly concentrated chemical gas, then dipping the wooden stick into the tank, exposing their skin and clothing to the liquid form.
 
 
