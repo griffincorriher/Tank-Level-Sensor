@@ -18,7 +18,7 @@ LCD connection            |  Arduino Nano + Ultrasonic board
 
 
 ## Issues
-- As mentioned above, the placement of the ultrasonic sensor is not ideal, but it is placed in the only nondestructive location (3d printed adapter mounted inside extra cap). If possible, it should be placed in the center so that the sensor waves are able to more accurately read the liquid level.
+- As mentioned above, the placement of the ultrasonic sensor is not ideal, but it is placed in the only nondestructive location (3d printed adapter mounted inside extra cap). If possible, it should be placed in the center so that the ultrasonic waves are able to more accurately read the liquid level.
 - The ultrasonic sensor has a working range of 25cm-4M. An issue arises if the tank is filled too high, then sensor is out of range and does not read properly. I have countered this with displaying a message saying that the level is out of range. Once the level drops and the level is in range, the display and median filter calculations start.
 - If the tank level is too low, the ultrasonic sensor will give irratic results because of the distance from the tank walls. Since the level is lower, the beam of the sensor is now wider causing it to reflect off of the tank. This could be fixed with the sensor being moved closer to the center.
 
